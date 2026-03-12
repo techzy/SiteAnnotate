@@ -1,21 +1,35 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+
+// 1. Define our Custom Types/Interfaces
+interface Coordinates {
+  x: number;
+  y: number;
+}
+
+interface MarkerData extends Coordinates {
+  id: string;
+  photos: string[];
+}
 
 export default function Home() {
-  // React State to manage our markers and modal
-  const [markers, setMarkers] = useState([]);
-  const [pendingCoords, setPendingCoords] = useState(null);
-  const [activeMarkerId, setActiveMarkerId] = useState(null);
+  // 2. Add Type Annotations to State
+  const [markers, setMarkers] = useState<MarkerData[]>([]);
+  const [pendingCoords, setPendingCoords] = useState<Coordinates | null>(null);
+  const [activeMarkerId, setActiveMarkerId] = useState<string | null>(null);
   
-  // Refs to access DOM elements directly
-  const containerRef = useRef(null);
-  const fileInputRef = useRef(null);
+  // 3. Strongly Type the Refs based on the HTML elements they point to
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. Handle clicking the blueprint
-  const handleMapClick = (e) => {
+  // 4. Strongly Type the Mouse Event
+  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Prevent triggering if clicking an existing marker
-    if (e.target.className.includes('marker')) return;
+    if ((e.target as HTMLElement).className.includes('marker')) return;
+
+    // Safety check in TS to ensure the ref is attached to an element
+    if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
@@ -23,22 +37,22 @@ export default function Home() {
 
     setPendingCoords({ x: xPercent, y: yPercent });
     
-    // Trigger the hidden file input
-    fileInputRef.current.click();
+    // Trigger the hidden file input (using optional chaining ?.)
+    fileInputRef.current?.click();
   };
 
-  // 2. Handle uploading the photos
-  const handleFileChange = (e) => {
+  // 5. Strongly Type the Input Change Event
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files.length === 0 || !pendingCoords) return;
+    if (!files || files.length === 0 || !pendingCoords) return;
 
-    const photoUrls = [];
+    const photoUrls: string[] = [];
     for (let i = 0; i < files.length; i++) {
       photoUrls.push(URL.createObjectURL(files[i]));
     }
 
-    const newMarker = {
-      id: Date.now().toString(), // Use timestamp for a unique ID
+    const newMarker: MarkerData = {
+      id: Date.now().toString(),
       x: pendingCoords.x,
       y: pendingCoords.y,
       photos: photoUrls,
@@ -47,13 +61,15 @@ export default function Home() {
     setMarkers([...markers, newMarker]);
     
     // Reset inputs
-    fileInputRef.current.value = '';
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setPendingCoords(null);
   };
 
-  // 3. Handle clicking a blue dot
-  const handleMarkerClick = (e, id) => {
-    e.stopPropagation(); // Stop the map click event from firing
+  // 6. Strongly Type the Marker Click Event
+  const handleMarkerClick = (e: React.MouseEvent<HTMLDivElement>, id: string) => {
+    e.stopPropagation(); 
     setActiveMarkerId(id);
   };
 
@@ -61,7 +77,6 @@ export default function Home() {
     setActiveMarkerId(null);
   };
 
-  // Find the currently active marker to display its photos in the modal
   const activeMarker = markers.find(m => m.id === activeMarkerId);
 
   return (
@@ -98,7 +113,7 @@ export default function Home() {
         onChange={handleFileChange}
       />
 
-      {/* Modal - only renders if activeMarkerId is set */}
+      {/* Modal */}
       {activeMarker && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
