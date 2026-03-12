@@ -90,7 +90,7 @@ export default function Home() {
         ref={containerRef} 
         onClick={handleMapClick}
       >
-        <img id="site-plan" src="/Sitefloor.jpg" alt="Site Plan" />
+        <img id="site-plan" src="/Sitefloor.JPG" alt="Site Plan" />
         
         {/* Render all markers from state */}
         {markers.map((marker) => (
