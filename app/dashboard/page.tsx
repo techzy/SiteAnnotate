@@ -19,6 +19,7 @@ export default function Dashboard() {
             const { data } = await supabase
                 .from('sites')
                 .select('*')
+                .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
                 .order('created_at', { ascending: false }) // Newest sites at the top for easy access
 
             if (data) setSites(data)

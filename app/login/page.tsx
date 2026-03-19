@@ -19,6 +19,8 @@ export default function Login() {
             email: email,
             password: password
         });
+        const { data: userData } = await supabase.auth.getUser();
+
         console.log(data)
         // 3. Check the results
         if (error) {
@@ -26,33 +28,28 @@ export default function Login() {
             alert(error.message); // Show the user what went wrong
         } else {
             console.log("Login successful! Here is the data:", data);
-            // After login, ensure the user has a site in the "sites" table, or create one
-
-            // 1. Try to fetch an existing site for this user (you could base it on owner, but since the schema 
-            //    does not specify an owner/user field, we will just create a new site every time for now)
-            //    In production, you'd want to add an owner/user_id field to 'sites' and filter accordingly.
-
-            // -- Try: see if any site exists for this user session/auth
             let siteId: string | undefined;
 
             // We'll just grab the first site if any exist. Otherwise, we'll create a site.
             const { data: sites, error: sitesError } = await supabase
                 .from("sites")
-                .select("id")
+                .select("id").eq('user_id', userData.user?.id)
                 .limit(1);
 
             if (sitesError) {
                 alert("Could not check for sites: " + sitesError.message);
                 return;
             }
-
             if (sites && sites.length > 0) {
                 siteId = sites[0].id;
             } else {
                 // No site exists, so create one
                 const { data: newSite, error: createSiteError } = await supabase
                     .from("sites")
-                    .insert([{ name: "My New Site" }])
+                    .insert([{
+                        name: "My New Site",
+                        user_id: userData.user?.id
+                    }])
                     .select("id")
                     .single();
 
