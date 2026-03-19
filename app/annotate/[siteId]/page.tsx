@@ -1,136 +1,149 @@
 "use client";
+import { supabase } from '../../lib/supabase'
+import React, { useEffect, useState, useRef } from "react";
+import { useParams } from "next/navigation";
+import AnnotatorCanvas from '../../components/AnnotatorCanvas'
+import imageCompression from 'browser-image-compression';
 
-import React, { useState, useRef } from 'react';
-
-// 1. Define our Custom Types/Interfaces
-interface Coordinates {
-  x: number;
-  y: number;
-}
-
-interface MarkerData extends Coordinates {
+type Site = {
   id: string;
-  photos: string[];
-}
+  name?: string | null;
+  file_name: string | null;
+  imageUrl?: string | null;
+};
 
-export default function Annotate() {
-  // 2. Add Type Annotations to State
-  const [markers, setMarkers] = useState<MarkerData[]>([]);
-  const [pendingCoords, setPendingCoords] = useState<Coordinates | null>(null);
-  const [activeMarkerId, setActiveMarkerId] = useState<string | null>(null);
-  
-  // 3. Strongly Type the Refs based on the HTML elements they point to
-  const containerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default function AnnotatePage() {
+  const { siteId } = useParams();
+  const [site, setSite] = useState<Site | null>(null);
+  const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 4. Strongly Type the Mouse Event
-  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent triggering if clicking an existing marker
-    if ((e.target as HTMLElement).className.includes('marker')) return;
+  useEffect(() => {
+    if (!siteId) return;
+    async function loadData() {
+      // 1. Fetch Site Data
+      const { data: siteData } = await supabase
+        .from("sites")
+        .select("id, name, file_name")
+        .eq("id", siteId)
+        .single();
 
-    // Safety check in TS to ensure the ref is attached to an element
-    if (!containerRef.current) return;
+      if (!siteData) {
+        setSite(null);
+        setLoading(false);
+        return;
+      }
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+      if (siteData.file_name == null) {
+        setSite({
+          id: siteData.id,
+          name: siteData.name ?? null,
+          file_name: siteData.file_name,
+          imageUrl: null,
+        });
+        setLoading(false);
+        return;
+      }
 
-    setPendingCoords({ x: xPercent, y: yPercent });
-    
-    // Trigger the hidden file input (using optional chaining ?.)
-    fileInputRef.current?.click();
-  };
+      // `file_name` is stored as the object path in the `blueprints` storage bucket.
+      const { data: signedUrlData } = await supabase.storage
+        .from("blueprints")
+        .createSignedUrl(siteData.file_name, 3600);
 
-  // 5. Strongly Type the Input Change Event
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !pendingCoords) return;
+      setSite({
+        id: siteData.id,
+        name: siteData.name ?? null,
+        file_name: siteData.file_name,
+        imageUrl: signedUrlData?.signedUrl ?? null,
+      });
+      setLoading(false)
+    }
+    loadData();
 
-    const photoUrls: string[] = [];
-    for (let i = 0; i < files.length; i++) {
-      photoUrls.push(URL.createObjectURL(files[i]));
+  }, [siteId]);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const imgFile = e.target.files?.[0]
+    if (!imgFile) return;
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true
+    }
+    try {
+      setLoading(true)
+
+      //Compressing File 
+      const compFile = await imageCompression(imgFile, options);
+      console.log(compFile.size)
+
+      // Uploading to Supabase storage
+      const fileName = `${siteId}-${Date.now()}.jpg`;
+      const { data: uploadData, error: uploadErr } = await supabase.storage.from('blueprints').upload(fileName, compFile)
+      if (uploadErr) throw uploadErr
+      // Updating the database
+
+      await supabase.from('sites').update({ file_name: fileName }).eq('id', siteId);
+
+      window.location.reload()
+    }
+    catch (err) {
+      console.log(err)
+    }
+    finally {
+      setLoading(false)
     }
 
-    const newMarker: MarkerData = {
-      id: Date.now().toString(),
-      x: pendingCoords.x,
-      y: pendingCoords.y,
-      photos: photoUrls,
-    };
 
-    setMarkers([...markers, newMarker]);
-    
-    // Reset inputs
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    setPendingCoords(null);
-  };
+  }
 
-  // 6. Strongly Type the Marker Click Event
-  const handleMarkerClick = (e: React.MouseEvent<HTMLDivElement>, id: string) => {
-    e.stopPropagation(); 
-    setActiveMarkerId(id);
-  };
+  if (loading) return <p className="p-8">Loading...</p>;
 
-  const closeModal = () => {
-    setActiveMarkerId(null);
-  };
+  if (!site?.file_name) {
+    return (
+      <div className="flex w-full items-center justify-center p-4">
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={handleFileChange}
+          accept="image/*"
+          name=""
+          id=""
+        />
+        <button
+          type="submit"
+          className="w-full max-w-xs rounded-xl bg-black py-4 h-50 px-6 text-center font-bold text-white 
+       transition-transform active:scale-95 hover:bg-gray-800 
+       shadow-lg shadow-black/10 sm:w-auto"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          Upload Blueprint
+        </button>
+      </div>
+    );
+  }
 
-  const activeMarker = markers.find(m => m.id === activeMarkerId);
+  if (!site.imageUrl) return <p className="p-8">Unable to load blueprint image.</p>;
 
   return (
-    <main>
-      <h1>Site Plan Annotator</h1>
-      <p>Click anywhere on the plan to mark a change order and upload photos. Click an existing blue dot to view the photos.</p>
+    <div className="min-h-screen bg-gray-900 flex flex-col">
+      <header className="bg-white p-4 shadow-md flex justify-between items-center">
+        <h1 className="font-bold text-lg">Site: {site?.name || 'Annotator'}</h1>
+        <span className="text-sm text-gray-500">Tap anywhere to add a red dot</span>
+      </header>
 
-      {/* Blueprint Container */}
-      <div 
-        id="plan-container" 
-        ref={containerRef} 
-        onClick={handleMapClick}
-      >
-        <img id="site-plan" src="/Sitefloor.JPG" alt="Site Plan" />
-        
-        {/* Render all markers from state */}
-        {markers.map((marker) => (
-          <div
-            key={marker.id}
-            className="marker"
-            style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
-            onClick={(e) => handleMarkerClick(e, marker.id)}
-          />
-        ))}
-      </div>
-
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        multiple
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
-
-      {/* Modal */}
-      {activeMarker && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Change Order Photos</h2>
-            <div className="modal-images">
-              {activeMarker.photos.length > 0 ? (
-                activeMarker.photos.map((url, idx) => (
-                  <img key={idx} src={url} alt={`Change order ${idx + 1}`} />
-                ))
-              ) : (
-                <p>No photos attached.</p>
-              )}
-            </div>
-            <button className="close-btn" onClick={closeModal}>Close</button>
-          </div>
+      <main className="flex-1 relative overflow-auto p-4 flex justify-center">
+        <div className="relative bg-white shadow-2xl h-fit">
+          <AnnotatorCanvas siteId={siteId as string} imageUrl={site.imageUrl} />
         </div>
-      )}
-    </main>
+      </main>
+    </div>
   );
 }
+
+
+
+
+
+
+
