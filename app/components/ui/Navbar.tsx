@@ -22,7 +22,7 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/signup"
+            href="https://forms.gle/9kiJELpFALVUWgQp8"
             className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 font-medium"
           >
             Signup

@@ -18,7 +18,7 @@ export default function Annotate() {
   const [markers, setMarkers] = useState<MarkerData[]>([]);
   const [pendingCoords, setPendingCoords] = useState<Coordinates | null>(null);
   const [activeMarkerId, setActiveMarkerId] = useState<string | null>(null);
-  
+
   // 3. Strongly Type the Refs based on the HTML elements they point to
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +36,7 @@ export default function Annotate() {
     const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
 
     setPendingCoords({ x: xPercent, y: yPercent });
-    
+
     // Trigger the hidden file input (using optional chaining ?.)
     fileInputRef.current?.click();
   };
@@ -59,7 +59,7 @@ export default function Annotate() {
     };
 
     setMarkers([...markers, newMarker]);
-    
+
     // Reset inputs
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -69,7 +69,7 @@ export default function Annotate() {
 
   // 6. Strongly Type the Marker Click Event
   const handleMarkerClick = (e: React.MouseEvent<HTMLDivElement>, id: string) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     setActiveMarkerId(id);
   };
 
@@ -80,18 +80,18 @@ export default function Annotate() {
   const activeMarker = markers.find(m => m.id === activeMarkerId);
 
   return (
-    <main>
+    <main className='p-5'>
       <h1>Site Plan Annotator</h1>
       <p>Click anywhere on the plan to mark a change order and upload photos. Click an existing blue dot to view the photos.</p>
 
       {/* Blueprint Container */}
-      <div 
-        id="plan-container" 
-        ref={containerRef} 
+      <div
+        id="plan-container"
+        ref={containerRef}
         onClick={handleMapClick}
       >
         <img id="site-plan" src="/Sitefloor.png" alt="Site Plan" />
-        
+
         {/* Render all markers from state */}
         {markers.map((marker) => (
           <div
