@@ -28,6 +28,7 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
         y_coords: number;
         message: string;
     } | null>(null);
+    const [draftMarker, setDraftMarker] = useState<{ x_coords: number; y_coords: number } | null>(null);
     const [issues, setIssues] = useState<IssueRow[]>([]);
     const [selectedIssue, setSelectedIssue] = useState<IssueRow | null>(null);
     const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
@@ -93,9 +94,16 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
         const xPercent = (x / rect.width) * 100;
         const yPercent = (y / rect.height) * 100;
 
+        // Draw the red marker right away for immediate visual feedback.
+        setDraftMarker({ x_coords: xPercent, y_coords: yPercent });
+
         // 4. For MVP: Prompt for a message (We can add a fancy Modal later)
         const message = prompt("What is the issue here?");
-        if (!message) return;
+        if (!message) {
+            // User canceled: remove the temporary marker.
+            setDraftMarker(null);
+            return;
+        }
 
         // 5. Ask for an image upload next
         setPendingIssue({ x_coords: xPercent, y_coords: yPercent, message });
@@ -109,6 +117,7 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
         // If user cancels, clear pending state and stop.
         if (!rawFile) {
             setPendingIssue(null);
+            setDraftMarker(null);
             return;
         }
 
@@ -172,6 +181,7 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
         } finally {
             setIsAdding(false);
             setPendingIssue(null);
+            setDraftMarker(null);
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
@@ -248,6 +258,14 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
                     }}
                 />
             ))}
+
+            {draftMarker && (
+                <div
+                    className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 bg-red-500"
+                    style={{ left: `${draftMarker.x_coords}%`, top: `${draftMarker.y_coords}%` }}
+                    aria-hidden="true"
+                />
+            )}
 
             {selectedIssue && (
                 <div

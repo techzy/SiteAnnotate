@@ -25,21 +25,6 @@ export default function Home() {
             </Link>
           </div>
         </section>
-
-        <section className="mt-12 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 text-left">
-            <p className="text-sm font-semibold text-gray-900">Quick annotation</p>
-            <p className="mt-1 text-sm text-gray-600">Tap the blueprint to drop issue points.</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 text-left">
-            <p className="text-sm font-semibold text-gray-900">Photo evidence</p>
-            <p className="mt-1 text-sm text-gray-600">Upload an image for each issue.</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 text-left">
-            <p className="text-sm font-semibold text-gray-900">Done in one tap</p>
-            <p className="mt-1 text-sm text-gray-600">Toggle status to mark issues as complete.</p>
-          </div>
-        </section>
       </main>
     </div>
   )
