@@ -87,7 +87,7 @@ export default function Dashboard() {
                         )}
                     </div>
                 )}
-                <button
+                <div
                     className="mt-8 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-400 bg-white p-6 text-blue-700 transition-all hover:border-blue-600 hover:bg-blue-50 active:scale-95"
                     onClick={async () => {
                         const siteName = window.prompt("Enter a name for your new site:");
@@ -121,14 +121,14 @@ export default function Dashboard() {
                         }
                     }}
                 >
-                    <span className="flex items-center gap-2 text-lg font-bold">
+                    <span className="flex flex-col items-center gap-2 text-lg font-bold">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                         Add New Site
                     </span>
                     <span className="text-xs text-blue-500 mt-1">Create a new site and upload a blueprint</span>
-                </button>
+                </div>
             </div>
         </div>
     )

@@ -111,6 +111,7 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        setIsAdding(true);
         const rawFile = e.target.files?.[0];
         if (!pendingIssue) return;
 
@@ -121,7 +122,6 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
             return;
         }
 
-        setIsAdding(true);
         try {
             // 1) Insert the issue row first so we get the new `id`.
             const { data: inserted, error: insertError } = await supabase
@@ -162,7 +162,7 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
                 alert("Error uploading image: " + uploadError.message);
                 return;
             }
-
+            setIsAdding(true);
             // 3) Update the issue row with the storage object path.
             const { error: updateError } = await supabase
                 .from('issues')
@@ -289,14 +289,6 @@ export default function AnnotatorCanvas({ siteId, imageUrl }: Props) {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    className="rounded-lg px-2 py-1 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() => setSelectedIssue(null)}
-                                    disabled={statusSaving}
-                                >
-                                    Close
-                                </button>
                                 <button
                                     type="button"
                                     className="rounded-lg p-2 text-sm text-gray-600 hover:bg-gray-100"
