@@ -14,16 +14,18 @@ export default function Navbar() {
 
         {/* Right side buttons */}
         <div className="flex items-center gap-4">
+
           <Link
-            href="/login"
-            className="text-gray-700 hover:text-gray-900 font-medium"
+            href="/demo"
+            className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white active:bg-blue-800 px-4 py-2 "
           >
-            Login
+            Demo
           </Link>
+
 
           <Link
             href="https://forms.gle/9kiJELpFALVUWgQp8"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 font-medium"
+            className="rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-black-700 font-medium"
           >
             Signup
           </Link>
