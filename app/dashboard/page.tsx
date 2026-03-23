@@ -3,8 +3,11 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function Dashboard() {
+    const router = useRouter()
+
     type SiteSummary = {
         id: string;
         name?: string | null;
@@ -84,6 +87,48 @@ export default function Dashboard() {
                         )}
                     </div>
                 )}
+                <button
+                    className="mt-8 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-400 bg-white p-6 text-blue-700 transition-all hover:border-blue-600 hover:bg-blue-50 active:scale-95"
+                    onClick={async () => {
+                        const siteName = window.prompt("Enter a name for your new site:");
+                        if (!siteName) return;
+
+                        // Create new site in the "sites" table
+                        // Assumes supabase client and user session/userId are available in this scope
+                        try {
+                            // Replace with however user id is accessed in your project
+                            const user = (await supabase.auth.getUser()).data.user;
+                            if (!user) {
+                                alert("You must be logged in to create a site.");
+                                return;
+                            }
+                            const { data: newSite, error } = await supabase
+                                .from("sites")
+                                .insert([
+                                    { name: siteName, user_id: user.id }
+                                ])
+                                .select("id")
+                                .single();
+                            if (error || !newSite) {
+                                alert("Could not create site: " + (error?.message || "Unknown error"));
+                                return;
+                            }
+                            // Redirect to annotate page for the new site
+                            router.push(`/annotate/${newSite.id}`);
+                        } catch (err) {
+                            alert("An unexpected error occurred.");
+                            console.log(err);
+                        }
+                    }}
+                >
+                    <span className="flex items-center gap-2 text-lg font-bold">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add New Site
+                    </span>
+                    <span className="text-xs text-blue-500 mt-1">Create a new site and upload a blueprint</span>
+                </button>
             </div>
         </div>
     )
